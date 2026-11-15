@@ -1,0 +1,23 @@
+.git/
+.gitignore
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# NUNCA incluir credenciais ou variaveis locais na imagem
+.env
+.env.*
+!.env.example
+*.json
+*.pem
+*.key
+
+# Testes, docs e artefatos de IDE/agentes
+.agents/
+.vscode/
+tests/
+*.md
+*.png
+*.log
