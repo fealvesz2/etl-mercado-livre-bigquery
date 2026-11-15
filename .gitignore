@@ -1,0 +1,19 @@
+﻿# Ambientes virtuais e caches Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Variaveis de ambiente e Credenciais (NUNCA subir para o GitHub)
+.env
+.env.*
+!.env.example
+*.json
+*.pem
+*.key
+
+# Configuracoes locais de agentes/IDE
+.agents/
+.vscode/
+.DS_Store

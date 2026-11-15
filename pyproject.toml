@@ -1,0 +1,12 @@
+[project]
+name = "etl-mercado-livre-mlb"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "google-cloud-bigquery>=3.47.0",
+    "google-cloud-secret-manager>=2.32.0",
+    "httpx>=0.28.1",
+    "python-dotenv>=1.2.4",
+    "pyyaml>=6.0.3",
+    "tenacity>=9.2.1",
+]

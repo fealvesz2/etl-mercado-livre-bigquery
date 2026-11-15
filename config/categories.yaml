@@ -1,0 +1,27 @@
+﻿site_id: "MLB"
+search_limit_per_category: 50
+multiget_batch_size: 20
+
+target_categories:
+  - id: "MLB1051"
+    name: "Celulares e Telefones"
+  - id: "MLB1648"
+    name: "Informatica"
+  - id: "MLB1000"
+    name: "Eletronicos, Audio e Video"
+  - id: "MLB5726"
+    name: "Eletrodomesticos"
+  - id: "MLB1276"
+    name: "Esportes e Fitness"
+
+tracked_product_queries:
+  - "Smartphone Samsung Galaxy S24"
+  - "iPhone 16 Pro"
+  - "Notebook Gamer RTX"
+  - "Air Fryer 4L"
+  - "Smart TV 55 4K"
+  - "PlayStation 5 Slim"
+  - "Fone Bluetooth JBL"
+  - "Monitor Gamer 144Hz"
+  - "Geladeira Frost Free Inox"
+  - "Tenis Corrida Masculino"
