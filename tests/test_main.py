@@ -14,6 +14,7 @@ class TestMainOrchestrator(unittest.TestCase):
         self.assertIn("vw_price_monitoring", content)
         self.assertIn("vw_logistics_share", content)
         self.assertIn("vw_trends_vs_offers", content)
+        self.assertIn("vw_payment_installments", content)
         self.assertNotIn("dev-plataforma-geral", content)
 
     def test_parse_args_supports_execution_date_and_skip_extract(self) -> None:
@@ -28,12 +29,14 @@ class TestMainOrchestrator(unittest.TestCase):
         mock_client.fetch_categories.return_value = [{"id": 1}]
         mock_client.fetch_trends_and_domains.return_value = [{"id": 2}]
         mock_client.fetch_items_or_niches_snapshot.return_value = [{"id": 3}]
+        mock_client.fetch_payment_methods.return_value = [{"id": 4}]
 
         mock_loader = MagicMock()
         mock_loader.load_all.return_value = {
-            "raw_categories": 5,
-            "raw_trends": 10,
-            "raw_items_search": 19,
+            "raw_categories": 32,
+            "raw_trends": 40,
+            "raw_items_search": 200,
+            "raw_payment_methods": 8,
         }
 
         mock_transformer = MagicMock()
@@ -41,6 +44,7 @@ class TestMainOrchestrator(unittest.TestCase):
             "dim_categories": {"bytes_billed": 31_457_280},
             "fact_daily_item_prices": {"bytes_billed": 20_971_520},
             "fact_daily_trends": {"bytes_billed": 20_971_520},
+            "dim_payment_methods": {"bytes_billed": 10_485_760},
         }
 
         target = date(2026, 11, 15)
@@ -53,11 +57,16 @@ class TestMainOrchestrator(unittest.TestCase):
 
         self.assertEqual(summary["execution_date"], "2026-11-15")
         self.assertEqual(summary["mode"], "PUBLIC")
+        mock_client.fetch_payment_methods.assert_called_once()
         mock_loader.load_all.assert_called_once_with(
-            [{"id": 1}], [{"id": 2}], [{"id": 3}], execution_date=target
+            [{"id": 1}],
+            [{"id": 2}],
+            [{"id": 3}],
+            payment_records=[{"id": 4}],
+            execution_date=target,
         )
         mock_transformer.run_all.assert_called_once_with(execution_date=target)
-        self.assertEqual(summary["total_silver_billed_mib"], 70.0)
+        self.assertEqual(summary["total_silver_billed_mib"], 80.0)
 
     def test_run_pipeline_skip_extract_runs_only_silver(self) -> None:
         mock_client = MagicMock()

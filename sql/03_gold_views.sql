@@ -19,16 +19,22 @@ SELECT
   d.parent_category_name,
   f.category_id,
   COALESCE(f.category_name, d.category_name) AS category_name,
+  d.category_depth,
+  d.is_leaf,
+  d.vertical,
   COUNT(DISTINCT f.record_id) AS monitored_records_count,
   ROUND(AVG(f.price), 2) AS avg_price,
   MIN(f.price) AS min_price,
   MAX(f.price) AS max_price,
+  MAX(d.maximum_price) AS category_max_price,
   ROUND(AVG(f.discount_pct), 2) AS avg_discount_pct,
   COUNTIF(COALESCE(f.discount_pct, 0) > 0) AS discounted_items_count,
   SUM(COALESCE(f.available_quantity, 0)) AS total_available_offers,
   SUM(COALESCE(f.sold_quantity, 0)) AS total_sold_units,
   ROUND(SAFE_DIVIDE(COUNTIF(COALESCE(f.catalog_listing, FALSE)), COUNT(*)) * 100, 2) AS catalog_adoption_pct,
-  COUNTIF(COALESCE(f.requires_gtin, FALSE)) AS gtin_required_count
+  COUNTIF(COALESCE(f.requires_gtin, FALSE)) AS gtin_required_count,
+  MAX(d.conditional_required_attributes_count) AS conditional_required_attrs_count,
+  MAX(d.variation_attributes_count) AS variation_attrs_count
 FROM prices_window AS f
 LEFT JOIN categories_window AS d
   ON f.snapshot_date = d.snapshot_date
@@ -39,7 +45,10 @@ GROUP BY
   d.parent_category_id,
   d.parent_category_name,
   f.category_id,
-  category_name;
+  category_name,
+  d.category_depth,
+  d.is_leaf,
+  d.vertical;
 
 CREATE OR REPLACE VIEW `meli_gold.vw_logistics_share`
 OPTIONS(
@@ -118,6 +127,8 @@ SELECT
   COALESCE(t.category_name, d.category_name) AS category_name,
   d.parent_category_id,
   d.parent_category_name,
+  d.category_depth,
+  d.vertical,
   t.domain_id,
   t.domain_name,
   t.inferred_brand,
@@ -128,6 +139,7 @@ SELECT
   d.required_attributes_count,
   d.catalog_required_attributes_count,
   d.minimum_price AS category_min_price,
+  d.permalink AS category_permalink,
   CASE
     WHEN d.total_items IS NULL THEN 'NAO_ENRIQUECIDA'
     WHEN d.total_items >= 500000 THEN 'ALTA_CONCORRENCIA'
@@ -142,3 +154,26 @@ FROM trends_window AS t
 LEFT JOIN categories_window AS d
   ON t.snapshot_date = d.snapshot_date
  AND t.category_id = d.category_id;
+
+CREATE OR REPLACE VIEW `meli_gold.vw_payment_installments`
+OPTIONS(
+  description="Camada Gold - Condicoes de meios de pagamento, liquidacao e parcelamento sem juros no MLB (janela padrao 30d)"
+) AS
+SELECT
+  snapshot_date,
+  payment_method_id,
+  payment_method_name,
+  payment_type_id,
+  supported_payment_types,
+  currency_id,
+  min_accreditation_days,
+  max_accreditation_days,
+  total_financial_cost,
+  max_installments,
+  max_installments_no_interest,
+  min_installment_allowed_amount,
+  max_installment_allowed_amount,
+  is_recommended,
+  ARRAY_LENGTH(payer_costs) AS installment_tiers_count
+FROM `meli_silver.dim_payment_methods`
+WHERE snapshot_date >= DATE_SUB(CURRENT_DATE('UTC'), INTERVAL 30 DAY);

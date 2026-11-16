@@ -56,20 +56,26 @@ def run_pipeline(
     if not skip_extract:
         client = meli_client or MeliClient()
         loader = bronze_loader or BronzeLoader()
-        summary["mode"] = "OAUTH" if client.is_oauth else "PUBLIC"
-        logger.info(
-            "Iniciando etapa Extract + Bronze Load | data=%s | modo=%s",
-            summary["execution_date"],
-            summary["mode"],
-        )
-        categories = client.fetch_categories()
-        trends = client.fetch_trends_and_domains()
-        items_or_niches = client.fetch_items_or_niches_snapshot(categories, trends)
+        try:
+            summary["mode"] = "OAUTH" if client.is_oauth else "PUBLIC"
+            logger.info(
+                "Iniciando etapa Extract + Bronze Load | data=%s | modo=%s",
+                summary["execution_date"],
+                summary["mode"],
+            )
+            categories = client.fetch_categories()
+            trends = client.fetch_trends_and_domains()
+            items_or_niches = client.fetch_items_or_niches_snapshot(categories, trends)
+            payments = client.fetch_payment_methods()
+        finally:
+            if meli_client is None:
+                client.close()
 
         bronze_counts = loader.load_all(
             categories,
             trends,
             items_or_niches,
+            payment_records=payments,
             execution_date=target_date,
         )
         summary["bronze_loaded_rows"] = bronze_counts
@@ -100,7 +106,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         execution_date=args.execution_date,
         skip_extract=args.skip_extract,
     )
-    print(f"VALIDACAO E4-T03 OK | {json.dumps(summary, ensure_ascii=False)}")
+    print(f"PIPELINE ETL MELI OK | {json.dumps(summary, ensure_ascii=False)}")
     return 0
 
 
