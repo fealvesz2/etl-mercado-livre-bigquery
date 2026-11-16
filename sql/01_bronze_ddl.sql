@@ -48,3 +48,20 @@ OPTIONS(
   partition_expiration_days=90,
   labels=[("domain", "meli"), ("layer", "bronze")]
 );
+
+CREATE TABLE IF NOT EXISTS meli_bronze.raw_payment_methods (
+  execution_date DATE NOT NULL OPTIONS(description="Data logica da execucao do pipeline (chave de particao)"),
+  endpoint STRING NOT NULL OPTIONS(description="Rota da API do Mercado Livre consultada"),
+  category_id STRING OPTIONS(description="ID do meio de pagamento MLB ou entidade relacionada"),
+  ingested_at TIMESTAMP NOT NULL OPTIONS(description="Timestamp UTC exato da coleta HTTP"),
+  payload_hash STRING NOT NULL OPTIONS(description="Hash SHA-256 deterministico do payload JSON"),
+  raw_payload JSON NOT NULL OPTIONS(description="Payload bruto de meios de pagamento, parcelamento e moeda BRL")
+)
+PARTITION BY execution_date
+CLUSTER BY category_id
+OPTIONS(
+  description="Camada Bronze - Catalogo de meios de pagamento, parcelamento e moeda MLB",
+  require_partition_filter=TRUE,
+  partition_expiration_days=90,
+  labels=[("domain", "meli"), ("layer", "bronze")]
+);

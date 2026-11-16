@@ -96,14 +96,16 @@ class BronzeLoader:
         category_records: Sequence[Dict[str, Any]],
         trend_records: Sequence[Dict[str, Any]],
         item_records: Sequence[Dict[str, Any]],
+        payment_records: Sequence[Dict[str, Any]] = (),
         execution_date: Optional[date] = None,
     ) -> Dict[str, int]:
-        """Carrega as tres tabelas Bronze para a mesma execution_date."""
+        """Carrega as tabelas Bronze para a mesma execution_date."""
         target_date = execution_date or datetime.now(timezone.utc).date()
         batches = {
             "raw_categories": category_records,
             "raw_trends": trend_records,
             "raw_items_search": item_records,
+            "raw_payment_methods": payment_records,
         }
         return {
             table_name: self.load_partition(table_name, rows, execution_date=target_date)
@@ -116,11 +118,12 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
-    meli = MeliClient()
-    categories = meli.fetch_categories()
-    trends = meli.fetch_trends_and_domains()
-    items_or_niches = meli.fetch_items_or_niches_snapshot(categories, trends)
+    with MeliClient() as meli:
+        categories = meli.fetch_categories()
+        trends = meli.fetch_trends_and_domains()
+        items_or_niches = meli.fetch_items_or_niches_snapshot(categories, trends)
+        payments = meli.fetch_payment_methods()
 
     loader = BronzeLoader()
-    counts = loader.load_all(categories, trends, items_or_niches)
-    print(f"VALIDACAO E3-T02 OK | Projeto: {loader.project_id} | Linhas carregadas: {counts}")
+    counts = loader.load_all(categories, trends, items_or_niches, payment_records=payments)
+    print(f"VALIDACAO E6-T03 OK | Projeto: {loader.project_id} | Linhas carregadas: {counts}")

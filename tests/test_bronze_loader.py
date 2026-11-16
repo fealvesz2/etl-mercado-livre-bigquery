@@ -67,6 +67,52 @@ class TestBronzeLoader(unittest.TestCase):
         self.assertEqual(raw_field.field_type, "JSON")
         mock_job.result.assert_called_once()
 
+    def test_load_all_loads_all_four_bronze_tables_with_decorators(self) -> None:
+        mock_client = MagicMock()
+        mock_client.project = "test-project"
+        mock_job = MagicMock()
+        mock_job.output_rows = 1
+        mock_client.load_table_from_json.return_value = mock_job
+
+        sample_row = [
+            {
+                "endpoint": "/test",
+                "category_id": "MLB1",
+                "ingested_at": "2026-11-16T00:00:00+00:00",
+                "payload_hash": "hash",
+                "raw_payload": {"ok": True},
+            }
+        ]
+
+        loader = BronzeLoader(project_id="test-project", dataset_id="meli_bronze", client=mock_client)
+        counts = loader.load_all(
+            sample_row,
+            sample_row,
+            sample_row,
+            payment_records=sample_row,
+            execution_date=date(2026, 11, 16),
+        )
+
+        self.assertEqual(
+            counts,
+            {
+                "raw_categories": 1,
+                "raw_trends": 1,
+                "raw_items_search": 1,
+                "raw_payment_methods": 1,
+            },
+        )
+        destinations = [call.args[1] for call in mock_client.load_table_from_json.call_args_list]
+        self.assertEqual(
+            destinations,
+            [
+                "test-project.meli_bronze.raw_categories$20261116",
+                "test-project.meli_bronze.raw_trends$20261116",
+                "test-project.meli_bronze.raw_items_search$20261116",
+                "test-project.meli_bronze.raw_payment_methods$20261116",
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
