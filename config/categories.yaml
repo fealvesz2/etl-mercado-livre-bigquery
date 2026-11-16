@@ -1,6 +1,14 @@
 ﻿site_id: "MLB"
 search_limit_per_category: 50
 multiget_batch_size: 20
+request_interval_ms: 80
+
+leaf_discovery:
+  use_bulk_tree: true
+  include_all_macros_summary: true
+  max_depth: 7
+  max_children_per_node: 4
+  top_leaves_per_macro: 10
 
 target_categories:
   - id: "MLB1051"
@@ -13,6 +21,26 @@ target_categories:
     name: "Eletrodomesticos"
   - id: "MLB1276"
     name: "Esportes e Fitness"
+  - id: "MLB5672"
+    name: "Acessorios para Veiculos"
+  - id: "MLB1574"
+    name: "Casa, Moveis e Decoracao"
+  - id: "MLB1430"
+    name: "Calcados, Roupas e Bolsas"
+  - id: "MLB263532"
+    name: "Ferramentas"
+  - id: "MLB1246"
+    name: "Beleza e Cuidado Pessoal"
+  - id: "MLB1132"
+    name: "Brinquedos e Hobbies"
+  - id: "MLB1500"
+    name: "Construcao"
+  - id: "MLB1071"
+    name: "Pet Shop"
+  - id: "MLB1144"
+    name: "Games"
+  - id: "MLB1384"
+    name: "Bebes"
 
 tracked_product_queries:
   - "Smartphone Samsung Galaxy S24"
@@ -25,3 +53,33 @@ tracked_product_queries:
   - "Monitor Gamer 144Hz"
   - "Geladeira Frost Free Inox"
   - "Tenis Corrida Masculino"
+  - "Tablet Samsung Galaxy Tab"
+  - "SSD NVMe 1TB"
+  - "Impressora Multifuncional Tanque de Tinta"
+  - "Caixa de Som Bluetooth"
+  - "Aspirador de Po Robo"
+  - "Maquina de Lavar Roupas 12kg"
+  - "Cafeteira Expresso Capsulas"
+  - "Bicicleta Aro 29"
+  - "Creatina Monohidratada 300g"
+  - "Pneu Aro 15"
+  - "Oleo Motor 5W30 Sintetico"
+  - "Central Multimidia Android"
+  - "Cadeira Escritorio Ergonomica"
+  - "Colchao Casal Molas Ensacadas"
+  - "Jogo de Panelas Antiaderente"
+  - "Mochila Executiva Notebook"
+  - "Relogio Smartwatch Masculino"
+  - "Furadeira Parafusadeira Bosch"
+  - "Kit Chaves Soquete Catraca"
+  - "Perfume Importado Masculino"
+  - "Creme Hidratante Cerave"
+  - "Secador de Cabelo Profissional"
+  - "Lego Star Wars"
+  - "Patinete Infantil"
+  - "Chuveiro Eletrico 220V"
+  - "Fechadura Digital Biometrica"
+  - "Racao Premier Caes Adultos"
+  - "Areia Higienica Gatos"
+  - "Nintendo Switch OLED"
+  - "Carrinho de Bebe Passeio"
