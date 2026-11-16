@@ -15,6 +15,10 @@ class TestMainOrchestrator(unittest.TestCase):
         self.assertIn("vw_logistics_share", content)
         self.assertIn("vw_trends_vs_offers", content)
         self.assertIn("vw_payment_installments", content)
+        self.assertIn("vw_price_monitoring_latest", content)
+        self.assertIn("vw_logistics_share_latest", content)
+        self.assertIn("vw_trends_vs_offers_latest", content)
+        self.assertIn("vw_payment_installments_latest", content)
         self.assertNotIn("dev-plataforma-geral", content)
 
     def test_parse_args_supports_execution_date_and_skip_extract(self) -> None:

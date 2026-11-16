@@ -1,6 +1,7 @@
 CREATE OR REPLACE VIEW `meli_gold.vw_price_monitoring`
 OPTIONS(
-  description="Camada Gold - Monitoramento diario de precos, descontos, ofertas e exigencia de catalogo/GTIN por categoria (janela padrao 30d)"
+  description="Camada Gold - Monitoramento diario de precos, descontos, ofertas e exigencia de catalogo/GTIN por categoria (janela padrao 30d)",
+  labels=[("domain", "meli"), ("layer", "gold")]
 ) AS
 WITH prices_window AS (
   SELECT *
@@ -52,7 +53,8 @@ GROUP BY
 
 CREATE OR REPLACE VIEW `meli_gold.vw_logistics_share`
 OPTIONS(
-  description="Camada Gold - Distribuicao de modalidades logisticas e cobertura de frete gratis / Mercado Envios (janela padrao 30d)"
+  description="Camada Gold - Distribuicao de modalidades logisticas e cobertura de frete gratis / Mercado Envios (janela padrao 30d)",
+  labels=[("domain", "meli"), ("layer", "gold")]
 ) AS
 WITH prices_window AS (
   SELECT *
@@ -106,7 +108,8 @@ FROM aggregated;
 
 CREATE OR REPLACE VIEW `meli_gold.vw_trends_vs_offers`
 OPTIONS(
-  description="Camada Gold - Cruzamento entre tendencias/descoberta de dominios e oferta ativa/barreira tecnica por categoria (janela padrao 30d)"
+  description="Camada Gold - Cruzamento entre tendencias/descoberta de dominios e oferta ativa/barreira tecnica por categoria (janela padrao 30d)",
+  labels=[("domain", "meli"), ("layer", "gold")]
 ) AS
 WITH trends_window AS (
   SELECT *
@@ -157,7 +160,8 @@ LEFT JOIN categories_window AS d
 
 CREATE OR REPLACE VIEW `meli_gold.vw_payment_installments`
 OPTIONS(
-  description="Camada Gold - Condicoes de meios de pagamento, liquidacao e parcelamento sem juros no MLB (janela padrao 30d)"
+  description="Camada Gold - Condicoes de meios de pagamento, liquidacao e parcelamento sem juros no MLB (janela padrao 30d)",
+  labels=[("domain", "meli"), ("layer", "gold")]
 ) AS
 SELECT
   snapshot_date,
@@ -177,3 +181,63 @@ SELECT
   ARRAY_LENGTH(payer_costs) AS installment_tiers_count
 FROM `meli_silver.dim_payment_methods`
 WHERE snapshot_date >= DATE_SUB(CURRENT_DATE('UTC'), INTERVAL 30 DAY);
+
+CREATE OR REPLACE VIEW `meli_gold.vw_price_monitoring_latest`
+OPTIONS(
+  description="Camada Gold - Snapshot mais recente de monitoramento de precos, catalogo e GTIN por categoria",
+  labels=[("domain", "meli"), ("layer", "gold")]
+) AS
+WITH latest_date AS (
+  SELECT MAX(snapshot_date) AS max_date
+  FROM `meli_silver.fact_daily_item_prices`
+  WHERE snapshot_date >= DATE_SUB(CURRENT_DATE('UTC'), INTERVAL 30 DAY)
+)
+SELECT v.*
+FROM `meli_gold.vw_price_monitoring` AS v
+CROSS JOIN latest_date AS l
+WHERE v.snapshot_date = l.max_date;
+
+CREATE OR REPLACE VIEW `meli_gold.vw_logistics_share_latest`
+OPTIONS(
+  description="Camada Gold - Snapshot mais recente de distribuicao de modalidades logisticas",
+  labels=[("domain", "meli"), ("layer", "gold")]
+) AS
+WITH latest_date AS (
+  SELECT MAX(snapshot_date) AS max_date
+  FROM `meli_silver.fact_daily_item_prices`
+  WHERE snapshot_date >= DATE_SUB(CURRENT_DATE('UTC'), INTERVAL 30 DAY)
+)
+SELECT v.*
+FROM `meli_gold.vw_logistics_share` AS v
+CROSS JOIN latest_date AS l
+WHERE v.snapshot_date = l.max_date;
+
+CREATE OR REPLACE VIEW `meli_gold.vw_trends_vs_offers_latest`
+OPTIONS(
+  description="Camada Gold - Snapshot mais recente de cruzamento entre tendencias e oferta ativa",
+  labels=[("domain", "meli"), ("layer", "gold")]
+) AS
+WITH latest_date AS (
+  SELECT MAX(snapshot_date) AS max_date
+  FROM `meli_silver.fact_daily_trends`
+  WHERE snapshot_date >= DATE_SUB(CURRENT_DATE('UTC'), INTERVAL 30 DAY)
+)
+SELECT v.*
+FROM `meli_gold.vw_trends_vs_offers` AS v
+CROSS JOIN latest_date AS l
+WHERE v.snapshot_date = l.max_date;
+
+CREATE OR REPLACE VIEW `meli_gold.vw_payment_installments_latest`
+OPTIONS(
+  description="Camada Gold - Snapshot mais recente de meios de pagamento e parcelamento no MLB",
+  labels=[("domain", "meli"), ("layer", "gold")]
+) AS
+WITH latest_date AS (
+  SELECT MAX(snapshot_date) AS max_date
+  FROM `meli_silver.dim_payment_methods`
+  WHERE snapshot_date >= DATE_SUB(CURRENT_DATE('UTC'), INTERVAL 30 DAY)
+)
+SELECT v.*
+FROM `meli_gold.vw_payment_installments` AS v
+CROSS JOIN latest_date AS l
+WHERE v.snapshot_date = l.max_date;

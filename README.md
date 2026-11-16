@@ -36,10 +36,11 @@ flowchart LR
   * `fact_daily_trends`: expansao completa dos ranks `1`, `2` e `3` de `domain_discovery` e `official_trends`.
   * `dim_payment_methods`: prazos de liquidacao (`min_accreditation_days`, `max_accreditation_days`), `max_installments`, `max_installments_no_interest` e `ARRAY<STRUCT>` `payer_costs`.
 * **Camada Gold Pronta para BI (`sql/03_gold_views.sql`):**
-  * `vw_price_monitoring`: precos piso/teto, descontos, ofertas ativas, adocao de catalogo e exigencia de GTIN/atributos por categoria/nicho.
-  * `vw_logistics_share`: distribuicao deterministica por modalidade logistica (`fulfillment`, `carrier`, `custom`) e cobertura de frete gratis.
-  * `vw_trends_vs_offers`: cruzamento entre termos monitorados (ranks 1 a 3), marca/modelo inferidos, concorrencia ativa e indice de oportunidade (sem registros `NAO_ENRIQUECIDA`).
-  * `vw_payment_installments`: comparativo de meios de pagamento, liquidacao e faixas de parcelamento no MLB.
+  * `vw_price_monitoring` (+ `vw_price_monitoring_latest`): precos piso/teto, descontos, ofertas ativas, adocao de catalogo e exigencia de GTIN/atributos por categoria/nicho.
+  * `vw_logistics_share` (+ `vw_logistics_share_latest`): distribuicao deterministica por modalidade logistica (`fulfillment`, `carrier`, `custom`) e cobertura de frete gratis.
+  * `vw_trends_vs_offers` (+ `vw_trends_vs_offers_latest`): cruzamento entre termos monitorados (ranks 1 a 3), marca/modelo inferidos, concorrencia ativa e indice de oportunidade (sem registros `NAO_ENRIQUECIDA` no snapshot mais recente).
+  * `vw_payment_installments` (+ `vw_payment_installments_latest`): comparativo de meios de pagamento, liquidacao e faixas de parcelamento no MLB.
+  * As views `*_latest` isolam o snapshot mais recente para consumo direto em paineis BI sem apagar o historico da janela de 30 dias.
 
 ---
 
@@ -72,7 +73,7 @@ flowchart LR
 |-- sql/
 |   |-- 01_bronze_ddl.sql        # DDL particionada/clusterizada (meli_bronze)
 |   |-- 02_silver_ddl.sql        # DDL tipada dual-mode e evolucao de colunas (meli_silver)
-|   |-- 03_gold_views.sql        # 4 Views analiticas Gold (janela 30d)
+|   |-- 03_gold_views.sql        # 8 Views analiticas Gold (janela 30d + *_latest)
 |   `-- transforms/              # Scripts SQL parametrizados Bronze -> Silver
 |-- src/
 |   |-- auth.py                  # Dual-Mode Auth + rotacao no Secret Manager
