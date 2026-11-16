@@ -15,6 +15,7 @@ SILVER_TABLES: Tuple[str, ...] = (
     "dim_categories",
     "fact_daily_item_prices",
     "fact_daily_trends",
+    "dim_payment_methods",
 )
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 

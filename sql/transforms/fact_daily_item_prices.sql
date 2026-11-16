@@ -98,10 +98,14 @@ public_niches AS (
     ARRAY_TO_STRING(JSON_VALUE_ARRAY(raw_payload, '$.settings.item_conditions'), ',') AS condition,
     JSON_VALUE(raw_payload, '$.settings.status') AS status,
     JSON_VALUE(raw_payload, '$.settings.catalog_domain') IS NOT NULL AS catalog_listing,
-    COALESCE(
-      JSON_VALUE_ARRAY(raw_payload, '$.settings.shipping_options')[SAFE_OFFSET(0)],
-      'unknown'
-    ) AS logistic_type,
+    CASE
+      WHEN 'carrier' IN UNNEST(JSON_VALUE_ARRAY(raw_payload, '$.settings.shipping_options')) THEN 'carrier'
+      WHEN 'custom' IN UNNEST(JSON_VALUE_ARRAY(raw_payload, '$.settings.shipping_options')) THEN 'custom'
+      ELSE COALESCE(
+        JSON_VALUE_ARRAY(raw_payload, '$.settings.shipping_options')[SAFE_OFFSET(0)],
+        'unknown'
+      )
+    END AS logistic_type,
     CAST(NULL AS BOOL) AS free_shipping,
     'carrier' IN UNNEST(JSON_VALUE_ARRAY(raw_payload, '$.settings.shipping_options')) AS supports_carrier_shipping,
     (
@@ -111,21 +115,28 @@ public_niches AS (
           AND (
             COALESCE(SAFE_CAST(JSON_VALUE(attr, '$.required') AS BOOL), FALSE)
             OR COALESCE(SAFE_CAST(JSON_VALUE(attr, '$.catalog_required') AS BOOL), FALSE)
+            OR COALESCE(SAFE_CAST(JSON_VALUE(attr, '$.conditional_required') AS BOOL), FALSE)
           )
         ),
         FALSE
       )
       FROM UNNEST(JSON_QUERY_ARRAY(raw_payload, '$.key_attributes')) AS attr
     ) AS requires_gtin,
-    (
-      SELECT COUNTIF(COALESCE(SAFE_CAST(JSON_VALUE(attr, '$.required') AS BOOL), FALSE))
-      FROM UNNEST(JSON_QUERY_ARRAY(raw_payload, '$.key_attributes')) AS attr
+    COALESCE(
+      SAFE_CAST(JSON_VALUE(raw_payload, '$.attribute_summary.required') AS INT64),
+      (
+        SELECT COUNTIF(COALESCE(SAFE_CAST(JSON_VALUE(attr, '$.required') AS BOOL), FALSE))
+        FROM UNNEST(JSON_QUERY_ARRAY(raw_payload, '$.key_attributes')) AS attr
+      )
     ) AS required_attrs_count,
-    (
-      SELECT COUNTIF(COALESCE(SAFE_CAST(JSON_VALUE(attr, '$.catalog_required') AS BOOL), FALSE))
-      FROM UNNEST(JSON_QUERY_ARRAY(raw_payload, '$.key_attributes')) AS attr
+    COALESCE(
+      SAFE_CAST(JSON_VALUE(raw_payload, '$.attribute_summary.catalog_required') AS INT64),
+      (
+        SELECT COUNTIF(COALESCE(SAFE_CAST(JSON_VALUE(attr, '$.catalog_required') AS BOOL), FALSE))
+        FROM UNNEST(JSON_QUERY_ARRAY(raw_payload, '$.key_attributes')) AS attr
+      )
     ) AS catalog_required_attrs_count,
-    CAST(NULL AS STRING) AS permalink,
+    JSON_VALUE(raw_payload, '$.permalink') AS permalink,
     ingested_at,
     payload_hash
   FROM `meli_bronze.raw_items_search`

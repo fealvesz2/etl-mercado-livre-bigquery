@@ -5,17 +5,26 @@ CREATE TABLE IF NOT EXISTS meli_silver.dim_categories (
   parent_category_id STRING OPTIONS(description="ID da macro-categoria raiz em path_from_root[0]"),
   parent_category_name STRING OPTIONS(description="Nome da macro-categoria raiz em path_from_root[0]"),
   category_level STRING NOT NULL OPTIONS(description="Nivel hierarquico: MACRO ou NICHE_OR_LEAF"),
+  category_depth INT64 OPTIONS(description="Profundidade da categoria na arvore (1=macro ate 7)"),
   is_leaf BOOL NOT NULL OPTIONS(description="Indica se e categoria folha sem subcategorias"),
   listing_allowed BOOL OPTIONS(description="Indica se a categoria permite publicacao direta"),
   catalog_domain STRING OPTIONS(description="Dominio de catalogo MLB associado (ex: MLB-CELLPHONES)"),
+  vertical STRING OPTIONS(description="Vertical comercial oficial da categoria no MLB"),
+  sub_vertical STRING OPTIONS(description="Sub-vertical comercial da categoria no MLB"),
+  shipping_profile STRING OPTIONS(description="Perfil logistico configurado na categoria (optional, not_allowed)"),
   total_items INT64 NOT NULL OPTIONS(description="Volume total de anuncios ativos na categoria"),
   children_count INT64 NOT NULL OPTIONS(description="Quantidade de subcategorias filhas diretas"),
   total_attributes_count INT64 OPTIONS(description="Total de atributos tecnicos da categoria"),
   required_attributes_count INT64 OPTIONS(description="Qtd de atributos obrigatorios para publicacao"),
   catalog_required_attributes_count INT64 OPTIONS(description="Qtd de atributos obrigatorios para Catalogo/Buy Box"),
+  conditional_required_attributes_count INT64 OPTIONS(description="Qtd de atributos condicionalmente obrigatorios (ex: GTIN)"),
+  variation_attributes_count INT64 OPTIONS(description="Qtd de atributos de variacao aceitos na categoria"),
   shipping_options ARRAY<STRING> OPTIONS(description="Modalidades de envio aceitas (ex: carrier, custom)"),
   buying_modes ARRAY<STRING> OPTIONS(description="Modalidades de compra aceitas (ex: buy_it_now)"),
   minimum_price NUMERIC OPTIONS(description="Preco minimo permitido para anuncios na categoria"),
+  maximum_price NUMERIC OPTIONS(description="Preco maximo permitido para anuncios na categoria"),
+  max_pictures_per_item INT64 OPTIONS(description="Limite maximo de fotos por anuncio na categoria"),
+  max_variations_allowed INT64 OPTIONS(description="Limite maximo de variacoes por anuncio na categoria"),
   permalink STRING OPTIONS(description="URL publica oficial da categoria no Mercado Livre"),
   ingested_at TIMESTAMP NOT NULL OPTIONS(description="Timestamp UTC da coleta original na Bronze"),
   payload_hash STRING NOT NULL OPTIONS(description="Hash SHA-256 do payload original para rastreabilidade")
@@ -27,6 +36,17 @@ OPTIONS(
   require_partition_filter=TRUE,
   labels=[("domain", "meli"), ("layer", "silver")]
 );
+
+ALTER TABLE meli_silver.dim_categories
+  ADD COLUMN IF NOT EXISTS category_depth INT64 OPTIONS(description="Profundidade da categoria na arvore (1=macro ate 7)"),
+  ADD COLUMN IF NOT EXISTS vertical STRING OPTIONS(description="Vertical comercial oficial da categoria no MLB"),
+  ADD COLUMN IF NOT EXISTS sub_vertical STRING OPTIONS(description="Sub-vertical comercial da categoria no MLB"),
+  ADD COLUMN IF NOT EXISTS shipping_profile STRING OPTIONS(description="Perfil logistico configurado na categoria (optional, not_allowed)"),
+  ADD COLUMN IF NOT EXISTS conditional_required_attributes_count INT64 OPTIONS(description="Qtd de atributos condicionalmente obrigatorios (ex: GTIN)"),
+  ADD COLUMN IF NOT EXISTS variation_attributes_count INT64 OPTIONS(description="Qtd de atributos de variacao aceitos na categoria"),
+  ADD COLUMN IF NOT EXISTS maximum_price NUMERIC OPTIONS(description="Preco maximo permitido para anuncios na categoria"),
+  ADD COLUMN IF NOT EXISTS max_pictures_per_item INT64 OPTIONS(description="Limite maximo de fotos por anuncio na categoria"),
+  ADD COLUMN IF NOT EXISTS max_variations_allowed INT64 OPTIONS(description="Limite maximo de variacoes por anuncio na categoria");
 
 CREATE TABLE IF NOT EXISTS meli_silver.fact_daily_item_prices (
   snapshot_date DATE NOT NULL OPTIONS(description="Data logica do snapshot diario (chave de particao)"),
@@ -83,6 +103,41 @@ PARTITION BY snapshot_date
 CLUSTER BY category_id
 OPTIONS(
   description="Camada Silver - Fato diario de tendencias de busca e descoberta semantica de dominios MLB",
+  require_partition_filter=TRUE,
+  labels=[("domain", "meli"), ("layer", "silver")]
+);
+
+CREATE TABLE IF NOT EXISTS meli_silver.dim_payment_methods (
+  snapshot_date DATE NOT NULL OPTIONS(description="Data logica do snapshot diario (chave de particao)"),
+  payment_method_id STRING NOT NULL OPTIONS(description="Identificador do meio de pagamento MLB (pix, visa, master, etc.)"),
+  payment_method_name STRING NOT NULL OPTIONS(description="Nome oficial do meio de pagamento"),
+  payment_type_id STRING NOT NULL OPTIONS(description="Tipo principal do meio (credit_card, bank_transfer, ticket, etc.)"),
+  supported_payment_types ARRAY<STRING> OPTIONS(description="Lista de tipos aceitos para a bandeira/meio (ex: credit_card, prepaid_card)"),
+  site_id STRING OPTIONS(description="Site Mercado Livre (MLB)"),
+  currency_id STRING OPTIONS(description="Moeda padrao associada (BRL)"),
+  min_accreditation_days INT64 OPTIONS(description="Prazo minimo em dias para liquidacao do recebivel"),
+  max_accreditation_days INT64 OPTIONS(description="Prazo maximo em dias para liquidacao do recebivel"),
+  total_financial_cost NUMERIC OPTIONS(description="Custo financeiro total informado pela API"),
+  max_installments INT64 OPTIONS(description="Numero maximo de parcelas permitidas"),
+  max_installments_no_interest INT64 OPTIONS(description="Numero maximo de parcelas com taxa zero"),
+  min_installment_allowed_amount NUMERIC OPTIONS(description="Menor valor minimo permitido nas faixas de parcelamento"),
+  max_installment_allowed_amount NUMERIC OPTIONS(description="Maior valor maximo permitido nas faixas de parcelamento"),
+  is_recommended BOOL NOT NULL OPTIONS(description="Indica se o meio possui etiqueta recommended_method"),
+  labels ARRAY<STRING> OPTIONS(description="Etiquetas operacionais retornadas pela API MLB"),
+  payer_costs ARRAY<STRUCT<
+    installments INT64,
+    installment_rate NUMERIC,
+    installment_rate_collector ARRAY<STRING>,
+    min_allowed_amount NUMERIC,
+    max_allowed_amount NUMERIC
+  >> OPTIONS(description="Tabela detalhada de faixas e taxas de parcelamento por numero de parcelas"),
+  ingested_at TIMESTAMP NOT NULL OPTIONS(description="Timestamp UTC da coleta original na Bronze"),
+  payload_hash STRING NOT NULL OPTIONS(description="Hash SHA-256 do payload original para rastreabilidade")
+)
+PARTITION BY snapshot_date
+CLUSTER BY payment_type_id, payment_method_id
+OPTIONS(
+  description="Camada Silver - Dimensao diaria de meios de pagamento, liquidacao e parcelamento MLB",
   require_partition_filter=TRUE,
   labels=[("domain", "meli"), ("layer", "silver")]
 );
